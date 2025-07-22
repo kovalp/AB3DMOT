@@ -1,7 +1,7 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
-import numpy as np, os, copy, math
+import numpy as np, os, copy
 from AB3DMOT_libs.box import Box3D
 from AB3DMOT_libs.matching import data_association
 from AB3DMOT_libs.kalman_filter import KF
@@ -387,7 +387,7 @@ class AB3DMOT(object):
 				info: a array of other info for each det
 			frame:    str, frame number, used to query ego pose
 		Requires: this method must be called once for each frame even with empty detections.
-		Returns the a similar array, where the last column is the object ID.
+		Returns a similar array, where the last column is the object ID.
 
 		NOTE: The number of objects returned may differ from the number of detections provided.
 		"""

@@ -1,5 +1,4 @@
 import numpy as np
-from numba import jit
 from scipy.optimize import linear_sum_assignment
 from AB3DMOT_libs.dist_metrics import iou, dist3d, dist_ground, m_distance
 
@@ -11,7 +10,7 @@ def compute_affinity(dets, trks, metric, trk_inv_inn_matrices=None):
 		for t, trk in enumerate(trks):
 
 			# choose to use different distance metrics
-			if 'iou' in metric:    	  dist_now = iou(det, trk, metric)            
+			if 'iou' in metric:    	  dist_now = iou(det, trk, metric)
 			elif metric == 'm_dis':   dist_now = -m_distance(det, trk, trk_inv_inn_matrices[t])
 			elif metric == 'euler':   dist_now = -m_distance(det, trk, None)
 			elif metric == 'dist_2d': dist_now = -dist_ground(det, trk)              	

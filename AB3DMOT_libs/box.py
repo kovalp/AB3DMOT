@@ -1,6 +1,4 @@
 import numpy as np
-from numba import jit
-from copy import deepcopy
 from .kitti_oxts import roty
 
 class Box3D:
