@@ -1,0 +1,20 @@
+[project]
+name = "ab3dmot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10.18"
+dependencies = [
+    "easydict>=1.13",
+    "filterpy>=1.4.5",
+    "glob2>=0.7",
+    "matplotlib>=3.10.5",
+    "numba>=0.61.2",
+    "numpy>=2.2.6",
+    "opencv-python>=4.11.0.86",
+    "pyyaml>=6.0.2",
+    "scikit-image>=0.25.2",
+    "scikit-video>=1.1.11",
+    "scipy>=1.15.3",
+    "terminaltables>=3.1.10",
+]
