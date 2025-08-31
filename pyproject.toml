@@ -1,7 +1,7 @@
 [project]
-name = "ab3dmot"
+name = "ab3dmot-io"
 version = "0.1.0"
-description = "Add your description here"
+description = "Reimplementation of AB3DMOT (a base-line 3D multiple-object tracker) used in nuScenes."
 readme = "README.md"
 requires-python = ">=3.10.18"
 dependencies = [
@@ -12,9 +12,21 @@ dependencies = [
     "numba>=0.61.2",
     "numpy>=2.2.6",
     "opencv-python>=4.11.0.86",
+    "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
     "scikit-image>=0.25.2",
     "scikit-video>=1.1.11",
     "scipy>=1.15.3",
     "terminaltables>=3.1.10",
+]
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "bump-my-version>=1.2.1",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.11",
 ]

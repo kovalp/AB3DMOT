@@ -1,6 +1,6 @@
 import numpy as np, cv2, random
 from PIL import Image
-from AB3DMOT_libs.box import Box3D
+from .box import Box3D
 from xinshuo_visualization import random_colors
 
 random.seed(0)

@@ -4,10 +4,10 @@
 import yaml, numpy as np, os
 from easydict import EasyDict as edict
 # from AB3DMOT_libs.model_multi import AB3DMOT_multi
-from AB3DMOT_libs.model import AB3DMOT
-from AB3DMOT_libs.kitti_oxts import load_oxts
-from AB3DMOT_libs.kitti_calib import Calibration
-from AB3DMOT_libs.nuScenes_split import get_split
+from .model import AB3DMOT
+from .kitti_oxts import load_oxts
+from .kitti_calib import Calibration
+from .nuScenes_split import get_split
 from xinshuo_io import mkdir_if_missing, is_path_exists, fileparts, load_list_from_folder
 from xinshuo_miscellaneous import merge_listoflist
 

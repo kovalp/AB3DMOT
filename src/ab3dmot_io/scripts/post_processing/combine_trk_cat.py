@@ -4,8 +4,8 @@
 # combine tracking results from different categories 
 
 import os, argparse
-from AB3DMOT_libs.io import combine_files
-from AB3DMOT_libs.utils import find_all_frames, get_subfolder_seq, Config
+from ab3dmot_io.core.io import combine_files
+from ab3dmot_io.core.utils import find_all_frames, get_subfolder_seq, Config
 from xinshuo_io import mkdir_if_missing, is_path_exists
 
 def parse_args():

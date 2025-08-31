@@ -1,26 +1,46 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
-from __future__ import print_function
-import matplotlib;
+from typing import Sequence, Union, Literal
 
+from pydantic import BaseModel
+
+import matplotlib;
 matplotlib.use('Agg')
-import os, numpy as np, time, sys, argparse
-from AB3DMOT_libs.utils import Config, get_subfolder_seq, initialize
-from AB3DMOT_libs.io import load_detection, get_saving_dir, get_frame_det, save_results, \
-    save_affinity
-from scripts.post_processing.combine_trk_cat import combine_trk_cat
-from xinshuo_io import mkdir_if_missing, save_txt_file
+
+import os
+import numpy as np
+import time
+import sys
+import argparse
+
+from .core.utils import Config, get_subfolder_seq, initialize
+from .core.io import (load_detection, get_saving_dir, get_frame_det, save_results, 
+    save_affinity)
+from .scripts.post_processing.combine_trk_cat import combine_trk_cat
+from xinshuo_io import mkdir_if_missing
 from xinshuo_miscellaneous import get_timestring, print_log
 
 
-def parse_args():
+
+class Ab3DMotCmdLine(BaseModel):
+    """."""
+    dataset: Union[Literal['KITTI'], Literal['nuScenes']] = 'KITTI'
+    split: Union[Literal['val'], Literal['train'], Literal['test']] = 'val'
+    det_name: str = 'pointrcnn'
+
+
+
+def parse_args(args: Union[Sequence[str]|None] = None) -> Ab3DMotCmdLine:
+    """."""
     parser = argparse.ArgumentParser(description='AB3DMOT')
-    parser.add_argument('--dataset', type=str, default='nuScenes', help='KITTI, nuScenes')
-    parser.add_argument('--split', type=str, default='', help='train, val, test')
-    parser.add_argument('--det_name', type=str, default='', help='pointrcnn')
-    args = parser.parse_args()
-    return args
+    parser.add_argument('--dataset', default='nuScenes', help='KITTI, nuScenes')
+    parser.add_argument('--split', default='val', help='train, val, test')
+    parser.add_argument('--det_name', default='poitrcnn', help='pointrcnn')
+    cli = Ab3DMotCmdLine()
+    parser.parse_args(args, cli)
+    return cli
+
 
 
 def main_per_cat(cfg, cat, log, ID_start):
@@ -110,7 +130,7 @@ def main_per_cat(cfg, cat, log, ID_start):
     return ID_start
 
 
-def main(args):
+def main(args: Ab3DMotCmdLine) -> None:
     # load config files
     config_path = './configs/%s.yml' % args.dataset
     cfg, settings_show = Config(config_path)

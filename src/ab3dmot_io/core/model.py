@@ -2,10 +2,10 @@
 # email: xinshuo.weng@gmail.com
 
 import numpy as np, os, copy
-from AB3DMOT_libs.box import Box3D
-from AB3DMOT_libs.matching import data_association
-from AB3DMOT_libs.kalman_filter import KF
-from AB3DMOT_libs.vis import vis_obj
+from .box import Box3D
+from .matching import data_association
+from .kalman_filter import KF
+from .vis import vis_obj
 from xinshuo_miscellaneous import print_log
 from xinshuo_io import mkdir_if_missing
 
@@ -403,6 +403,7 @@ class AB3DMOT(object):
 		self.id_past_output = copy.copy(self.id_now_output)
 		self.id_past = [trk.id for trk in self.trackers]
 
+		breakpoint()
 		# process detection format
 		dets = self.process_dets(dets)
 
