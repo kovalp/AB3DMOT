@@ -2,7 +2,7 @@
 # email: xinshuo.weng@gmail.com
 
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Sequence, Union, TextIO
 from easydict import EasyDict
 
 from pydantic import BaseModel
@@ -16,6 +16,7 @@ import time
 import sys
 import argparse
 import enum
+import io
 
 from .core.utils import load_config, get_subfolder_seq, initialize
 from .core.io import (load_detection, get_saving_dir, get_frame_det, save_results, 
@@ -42,8 +43,9 @@ class Ab3DMotCmdLine(BaseModel):
     dataset: DataSet = DataSet.KITTI.value
     split: SubSet = SubSet.none.value
     det_name: str = ''
-    data_root_dir: str = './data'
-    conf_root_dir: str = './configs/'
+    data_root: str = './data/'
+    conf_root: str = './configs/'
+    save_root: str = './results/'
 
 
 
@@ -53,22 +55,23 @@ def parse_args(args: Union[Sequence[str]|None] = None) -> Ab3DMotCmdLine:
     parser.add_argument('--dataset', default=DataSet.KITTI.value, choices=list(DataSet), help='Dataset')
     parser.add_argument('--split', default=SubSet.none.value, choices=list(SubSet), help='Subset')
     parser.add_argument('--det-name', default='', help='Detector type, e.g. `pointrcnn`.')
-    parser.add_argument('--data-root-dir', default='./data', help='Root directory with datasets.')
-    parser.add_argument('--conf-root-dir', default='./configs', help='Root directory with configurations.')
+    parser.add_argument('--data-root', default='./data', help='Root directory with datasets.')
+    parser.add_argument('--conf-root', default='./configs', help='Root directory with configurations.')
+    parser.add_argument('--save-root', default='./results', help='Root directory for results.')
     cli = Ab3DMotCmdLine()
     parser.parse_args(args, cli)
     return cli
 
 
 
-def main_per_cat(cfg: EasyDict, cat: str, log, ID_start):
+def main_per_cat(cfg: EasyDict, cat: str, log: TextIO, ID_start: int) -> None:
     # get data-cat-split specific path
     result_sha = '%s_%s_%s' % (cfg.det_name, cat, cfg.split)
-    det_root = os.path.join(cfg.data_root_dir, cfg.dataset, 'detection', result_sha)
+    det_root = os.path.join(cfg.data_root, cfg.dataset, 'detection', result_sha)
     subfolder, det_id2str, hw, seq_eval = get_subfolder_seq(cfg.dataset, cfg.split)
-    data_root = str(Path(cfg.data_root_dir) / cfg.dataset)
+    data_root = str(Path(cfg.data_root) / cfg.dataset)
     trk_root = os.path.join(data_root, 'tracking')
-    save_dir = os.path.join(cfg.save_root, result_sha + '_H%d' % cfg.num_hypo);
+    save_dir = os.path.join(cfg.save_root, cfg.dataset, result_sha + '_H%d' % cfg.num_hypo);
     mkdir_if_missing(save_dir)
 
     # create eval dir for each hypothesis
@@ -151,7 +154,7 @@ def main_per_cat(cfg: EasyDict, cat: str, log, ID_start):
 
 def main(args: Ab3DMotCmdLine) -> None:
     # load config files
-    config_path = Path(args.conf_root_dir) / f'{args.dataset}.yml'
+    config_path = Path(args.conf_root) / f'{args.dataset}.yml'
     cfg, settings_show = load_config(config_path)
 
     # overwrite split and detection method
@@ -159,16 +162,16 @@ def main(args: Ab3DMotCmdLine) -> None:
         cfg.split = args.split
     if args.det_name != '':
         cfg.det_name = args.det_name
-    if args.data_root_dir != '':
-        cfg.data_root_dir = args.data_root_dir
+    if args.data_root != '':
+        cfg.data_root = args.data_root
 
     print(cfg)
     print(args)
 
     # print configs
     time_str = get_timestring()
-    log = os.path.join(cfg.save_root, 'log/log_%s_%s_%s.txt' % (time_str, cfg.dataset, cfg.split))
-    mkdir_if_missing(log);
+    log = os.path.join(cfg.save_root, '%s/log/log_%s_%s_%s.txt' % (cfg.dataset, time_str, cfg.dataset, cfg.split))
+    mkdir_if_missing(log)
     log = open(log, 'w')
     for data in settings_show:
         print_log(data, log, display=False)
@@ -184,7 +187,7 @@ def main(args: Ab3DMotCmdLine) -> None:
 
     # combine results for every category
     print_log('\ncombining results......', log=log)
-    combine_trk_cat(cfg.split, cfg.dataset, cfg.det_name, config_path)
+    combine_trk_cat(cfg.split, cfg.dataset, cfg.det_name, config_path, args.save_root)
     print_log('\nDone!', log=log)
     log.close()
 

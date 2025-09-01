@@ -2,8 +2,10 @@
 # email: xinshuo.weng@gmail.com
 
 from typing import Tuple, List
+import sys
 
-import yaml, numpy as np, os
+import yaml
+import os
 from easydict import EasyDict as edict
 
 from .model import AB3DMOT
@@ -191,6 +193,9 @@ def initialize(
     # compute the min/max frame
     frame_list, _ = load_list_from_folder(img_seq)
     frame_list = [fileparts(frame_file)[1] for frame_file in frame_list]
+    print(img_seq)
+    print(frame_list)
+    sys.exit(0)
 
     return tracker, frame_list
 

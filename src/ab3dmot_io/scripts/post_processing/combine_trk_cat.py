@@ -22,11 +22,9 @@ def parse_args():
     return args
 
 
-def combine_trk_cat(split, dataset, method, config_path: Path):
-
+def combine_trk_cat(split: str, dataset: str, method: str, config_path: Path, save_root: str) -> None:
 	# load dataset-specific config
-	file_path = os.path.dirname(os.path.realpath(__file__))
-	root_dir = os.path.join(file_path, '../../results', dataset)
+	root_dir = Path(save_root) / dataset
 	_, det_id2str, _, seq_list = get_subfolder_seq(dataset, split)
 
 	# load config files
@@ -60,7 +58,8 @@ def combine_trk_cat(split, dataset, method, config_path: Path):
 		save_root = os.path.join(root_dir, '%s_%s' % (method, split), 'trk_withid'+data_suffix)
 		for seq_tmp in seq_list:
 			
-			save_dir = os.path.join(save_root, seq_tmp); mkdir_if_missing(save_dir)
+			save_dir = os.path.join(save_root, seq_tmp);
+			mkdir_if_missing(save_dir)
 			for frame_tmp in frame_dict[seq_tmp]:
 				file_list_tmp = list()
 				for subset_tmp in subset:
