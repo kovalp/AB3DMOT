@@ -1,6 +1,8 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
+from typing import Tuple, List
+
 import yaml, numpy as np, os
 from easydict import EasyDict as edict
 
@@ -17,7 +19,8 @@ from xinshuo_io import (
 from xinshuo_miscellaneous import merge_listoflist
 
 
-def Config(filename):
+def load_config(filename: str) -> Tuple[edict, List[str]]:
+    """."""
     listfile1 = open(filename, "r")
     listfile2 = open(filename, "r")
     cfg = edict(yaml.safe_load(listfile1))
@@ -58,25 +61,24 @@ def get_subfolder_seq(dataset, split):
                 "0020",
             ]  # train
         if split == "val":
-            seq_eval = [
-                "0001",
-                "0006",
-                "0008",
-                "0010",
-                "0012",
-                "0013",
-                "0014",
-                "0015",
-                "0016",
-                "0018",
-                "0019",
-            ]  # val
+            # seq_eval = [
+            #     "0001",
+            #     "0006",
+            #     "0008",
+            #     "0010",
+            #     "0012",
+            #     "0013",
+            #     "0014",
+            #     "0015",
+            #     "0016",
+            #     "0018",
+            #     "0019",
+            # ]  # val
+
+            seq_eval = ["0001", "0006"]
+
         if split == "test":
             seq_eval = ["%04d" % i for i in range(29)]
-
-        data_root = os.path.join(
-            file_path, "../data/KITTI"
-        )  # path containing the KITTI root
 
     elif dataset == "nuScenes":  # nuScenes
         det_id2str = {
@@ -102,14 +104,10 @@ def get_subfolder_seq(dataset, split):
         if split == "test":
             seq_eval = get_split()[2]  # 150 scenes
 
-        data_root = os.path.join(
-            file_path, "../data/nuScenes/nuKITTI"
-        )  # path containing the nuScenes-converted KITTI root
-
     else:
         assert False, "error, %s dataset is not supported" % dataset
 
-    return subfolder, det_id2str, hw, seq_eval, data_root
+    return subfolder, det_id2str, hw, seq_eval
 
 
 def get_threshold(dataset, det_name):

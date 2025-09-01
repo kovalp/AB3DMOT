@@ -1,7 +1,9 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
-from typing import Sequence, Union, Literal
+from pathlib import Path
+from typing import Sequence, Union
+from easydict import EasyDict
 
 from pydantic import BaseModel
 
@@ -13,8 +15,9 @@ import numpy as np
 import time
 import sys
 import argparse
+import enum
 
-from .core.utils import Config, get_subfolder_seq, initialize
+from .core.utils import load_config, get_subfolder_seq, initialize
 from .core.io import (load_detection, get_saving_dir, get_frame_det, save_results, 
     save_affinity)
 from .scripts.post_processing.combine_trk_cat import combine_trk_cat
@@ -22,32 +25,48 @@ from xinshuo_io import mkdir_if_missing
 from xinshuo_miscellaneous import get_timestring, print_log
 
 
+class DataSet(enum.Enum):
+    KITTI = 'KITTI'
+    nuScenes = 'nuScenes'
+
+
+class SubSet(enum.Enum):
+    test = 'test'
+    train = 'train'
+    val = 'val'
+    none = ''
+
 
 class Ab3DMotCmdLine(BaseModel):
     """."""
-    dataset: Union[Literal['KITTI'], Literal['nuScenes']] = 'KITTI'
-    split: Union[Literal['val'], Literal['train'], Literal['test']] = 'val'
-    det_name: str = 'pointrcnn'
+    dataset: DataSet = DataSet.KITTI.value
+    split: SubSet = SubSet.none.value
+    det_name: str = ''
+    data_root_dir: str = './data'
+    conf_root_dir: str = './configs/'
 
 
 
 def parse_args(args: Union[Sequence[str]|None] = None) -> Ab3DMotCmdLine:
     """."""
     parser = argparse.ArgumentParser(description='AB3DMOT')
-    parser.add_argument('--dataset', default='nuScenes', help='KITTI, nuScenes')
-    parser.add_argument('--split', default='val', help='train, val, test')
-    parser.add_argument('--det_name', default='poitrcnn', help='pointrcnn')
+    parser.add_argument('--dataset', default=DataSet.KITTI.value, choices=list(DataSet), help='Dataset')
+    parser.add_argument('--split', default=SubSet.none.value, choices=list(SubSet), help='Subset')
+    parser.add_argument('--det-name', default='', help='Detector type, e.g. `pointrcnn`.')
+    parser.add_argument('--data-root-dir', default='./data', help='Root directory with datasets.')
+    parser.add_argument('--conf-root-dir', default='./configs', help='Root directory with configurations.')
     cli = Ab3DMotCmdLine()
     parser.parse_args(args, cli)
     return cli
 
 
 
-def main_per_cat(cfg, cat, log, ID_start):
+def main_per_cat(cfg: EasyDict, cat: str, log, ID_start):
     # get data-cat-split specific path
     result_sha = '%s_%s_%s' % (cfg.det_name, cat, cfg.split)
-    det_root = os.path.join('./data', cfg.dataset, 'detection', result_sha)
-    subfolder, det_id2str, hw, seq_eval, data_root = get_subfolder_seq(cfg.dataset, cfg.split)
+    det_root = os.path.join(cfg.data_root_dir, cfg.dataset, 'detection', result_sha)
+    subfolder, det_id2str, hw, seq_eval = get_subfolder_seq(cfg.dataset, cfg.split)
+    data_root = str(Path(cfg.data_root_dir) / cfg.dataset)
     trk_root = os.path.join(data_root, 'tracking')
     save_dir = os.path.join(cfg.save_root, result_sha + '_H%d' % cfg.num_hypo);
     mkdir_if_missing(save_dir)
@@ -132,19 +151,26 @@ def main_per_cat(cfg, cat, log, ID_start):
 
 def main(args: Ab3DMotCmdLine) -> None:
     # load config files
-    config_path = './configs/%s.yml' % args.dataset
-    cfg, settings_show = Config(config_path)
+    config_path = Path(args.conf_root_dir) / f'{args.dataset}.yml'
+    cfg, settings_show = load_config(config_path)
 
     # overwrite split and detection method
-    if args.split != '': cfg.split = args.split
-    if args.det_name != '': cfg.det_name = args.det_name
+    if args.split != '':
+        cfg.split = args.split
+    if args.det_name != '':
+        cfg.det_name = args.det_name
+    if args.data_root_dir != '':
+        cfg.data_root_dir = args.data_root_dir
+
+    print(cfg)
+    print(args)
 
     # print configs
     time_str = get_timestring()
     log = os.path.join(cfg.save_root, 'log/log_%s_%s_%s.txt' % (time_str, cfg.dataset, cfg.split))
     mkdir_if_missing(log);
     log = open(log, 'w')
-    for idx, data in enumerate(settings_show):
+    for data in settings_show:
         print_log(data, log, display=False)
 
     # global ID counter used for all categories, not start from 1 for each category to prevent different
@@ -158,7 +184,7 @@ def main(args: Ab3DMotCmdLine) -> None:
 
     # combine results for every category
     print_log('\ncombining results......', log=log)
-    combine_trk_cat(cfg.split, cfg.dataset, cfg.det_name, 'H%d' % cfg.num_hypo, cfg.num_hypo)
+    combine_trk_cat(cfg.split, cfg.dataset, cfg.det_name, config_path)
     print_log('\nDone!', log=log)
     log.close()
 
