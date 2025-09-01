@@ -1,6 +1,6 @@
 import numpy as np, time
 from scipy.spatial import ConvexHull
-from AB3DMOT_libs.box import Box3D
+from .box import Box3D
 
 def polygon_clip(subjectPolygon, clipPolygon):
 	""" Clip a polygon with another polygon.

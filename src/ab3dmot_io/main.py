@@ -1,35 +1,77 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
-from __future__ import print_function
-import matplotlib;
+from pathlib import Path
+from typing import Sequence, Union, TextIO
+from easydict import EasyDict
 
+from pydantic import BaseModel
+
+import matplotlib;
 matplotlib.use('Agg')
-import os, numpy as np, time, sys, argparse
-from AB3DMOT_libs.utils import Config, get_subfolder_seq, initialize
-from AB3DMOT_libs.io import load_detection, get_saving_dir, get_frame_det, save_results, \
-    save_affinity
-from scripts.post_processing.combine_trk_cat import combine_trk_cat
-from xinshuo_io import mkdir_if_missing, save_txt_file
+
+import os
+import numpy as np
+import time
+import sys
+import argparse
+import enum
+import io
+
+from .core.utils import load_config, get_subfolder_seq, initialize
+from .core.io import (load_detection, get_saving_dir, get_frame_det, save_results, 
+    save_affinity)
+from .scripts.post_processing.combine_trk_cat import combine_trk_cat
+from xinshuo_io import mkdir_if_missing
 from xinshuo_miscellaneous import get_timestring, print_log
 
 
-def parse_args():
+class DataSet(enum.Enum):
+    KITTI = 'KITTI'
+    nuScenes = 'nuScenes'
+
+
+class SubSet(enum.Enum):
+    test = 'test'
+    train = 'train'
+    val = 'val'
+    none = ''
+
+
+class Ab3DMotCmdLine(BaseModel):
+    """."""
+    dataset: DataSet = DataSet.KITTI.value
+    split: SubSet = SubSet.none.value
+    det_name: str = ''
+    data_root: str = './data/'
+    conf_root: str = './configs/'
+    save_root: str = './results/'
+
+
+
+def parse_args(args: Union[Sequence[str]|None] = None) -> Ab3DMotCmdLine:
+    """."""
     parser = argparse.ArgumentParser(description='AB3DMOT')
-    parser.add_argument('--dataset', type=str, default='nuScenes', help='KITTI, nuScenes')
-    parser.add_argument('--split', type=str, default='', help='train, val, test')
-    parser.add_argument('--det_name', type=str, default='', help='pointrcnn')
-    args = parser.parse_args()
-    return args
+    parser.add_argument('--dataset', default=DataSet.KITTI.value, choices=list(DataSet), help='Dataset')
+    parser.add_argument('--split', default=SubSet.none.value, choices=list(SubSet), help='Subset')
+    parser.add_argument('--det-name', default='', help='Detector type, e.g. `pointrcnn`.')
+    parser.add_argument('--data-root', default='./data', help='Root directory with datasets.')
+    parser.add_argument('--conf-root', default='./configs', help='Root directory with configurations.')
+    parser.add_argument('--save-root', default='./results', help='Root directory for results.')
+    cli = Ab3DMotCmdLine()
+    parser.parse_args(args, cli)
+    return cli
 
 
-def main_per_cat(cfg, cat, log, ID_start):
+
+def main_per_cat(cfg: EasyDict, cat: str, log: TextIO, ID_start: int) -> None:
     # get data-cat-split specific path
     result_sha = '%s_%s_%s' % (cfg.det_name, cat, cfg.split)
-    det_root = os.path.join('./data', cfg.dataset, 'detection', result_sha)
-    subfolder, det_id2str, hw, seq_eval, data_root = get_subfolder_seq(cfg.dataset, cfg.split)
+    det_root = os.path.join(cfg.data_root, cfg.dataset, 'detection', result_sha)
+    subfolder, det_id2str, hw, seq_eval = get_subfolder_seq(cfg.dataset, cfg.split)
+    data_root = str(Path(cfg.data_root) / cfg.dataset)
     trk_root = os.path.join(data_root, 'tracking')
-    save_dir = os.path.join(cfg.save_root, result_sha + '_H%d' % cfg.num_hypo);
+    save_dir = os.path.join(cfg.save_root, cfg.dataset, result_sha + '_H%d' % cfg.num_hypo);
     mkdir_if_missing(save_dir)
 
     # create eval dir for each hypothesis
@@ -110,21 +152,28 @@ def main_per_cat(cfg, cat, log, ID_start):
     return ID_start
 
 
-def main(args):
+def main(args: Ab3DMotCmdLine) -> None:
     # load config files
-    config_path = './configs/%s.yml' % args.dataset
-    cfg, settings_show = Config(config_path)
+    config_path = Path(args.conf_root) / f'{args.dataset}.yml'
+    cfg, settings_show = load_config(config_path)
 
     # overwrite split and detection method
-    if args.split != '': cfg.split = args.split
-    if args.det_name != '': cfg.det_name = args.det_name
+    if args.split != '':
+        cfg.split = args.split
+    if args.det_name != '':
+        cfg.det_name = args.det_name
+    if args.data_root != '':
+        cfg.data_root = args.data_root
+
+    print(cfg)
+    print(args)
 
     # print configs
     time_str = get_timestring()
-    log = os.path.join(cfg.save_root, 'log/log_%s_%s_%s.txt' % (time_str, cfg.dataset, cfg.split))
-    mkdir_if_missing(log);
+    log = os.path.join(cfg.save_root, '%s/log/log_%s_%s_%s.txt' % (cfg.dataset, time_str, cfg.dataset, cfg.split))
+    mkdir_if_missing(log)
     log = open(log, 'w')
-    for idx, data in enumerate(settings_show):
+    for data in settings_show:
         print_log(data, log, display=False)
 
     # global ID counter used for all categories, not start from 1 for each category to prevent different
@@ -138,7 +187,7 @@ def main(args):
 
     # combine results for every category
     print_log('\ncombining results......', log=log)
-    combine_trk_cat(cfg.split, cfg.dataset, cfg.det_name, 'H%d' % cfg.num_hypo, cfg.num_hypo)
+    combine_trk_cat(cfg.split, cfg.dataset, cfg.det_name, config_path, args.save_root)
     print_log('\nDone!', log=log)
     log.close()
 

@@ -2,10 +2,12 @@
 # email: xinshuo.weng@gmail.com
 
 import numpy as np, os, copy
-from AB3DMOT_libs.box import Box3D
-from AB3DMOT_libs.matching import data_association
-from AB3DMOT_libs.kalman_filter import KF
-from AB3DMOT_libs.vis import vis_obj
+from .box import Box3D
+from .matching import data_association
+from .kalman_filter import KF
+from .vis import vis_obj
+from .kitti_oxts import get_ego_traj, egomotion_compensation_ID
+
 from xinshuo_miscellaneous import print_log
 from xinshuo_io import mkdir_if_missing
 
@@ -151,9 +153,7 @@ class AB3DMOT(object):
 		return theta_pre, theta_obs
 
 	def ego_motion_compensation(self, frame, trks):
-		# inverse ego motion compensation, move trks from the last frame of coordinate to the current frame for matching
-		
-		from AB3DMOT_libs.kitti_oxts import get_ego_traj, egomotion_compensation_ID
+		# inverse ego motion compensation, move trks from the last frame of coordinate to the current frame for matching	
 		assert len(self.trackers) == len(trks), 'error'
 		ego_xyz_imu, ego_rot_imu, left, right = get_ego_traj(self.oxts, frame, 1, 1, only_fut=True, inverse=True) 
 		for index in range(len(self.trackers)):

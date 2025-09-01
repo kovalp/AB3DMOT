@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from AB3DMOT_libs.dist_metrics import iou, dist3d, dist_ground, m_distance
+from .dist_metrics import iou, dist3d, dist_ground, m_distance
 
 def compute_affinity(dets, trks, metric, trk_inv_inn_matrices=None):
 	# compute affinity matrix
